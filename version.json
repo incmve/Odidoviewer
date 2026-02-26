@@ -1,0 +1,4 @@
+{
+  "version": "1.2.0",
+  "notes": "Added click-to-open-row and collapsible advanced search (date ranges, brand, activity log filter)."
+}
