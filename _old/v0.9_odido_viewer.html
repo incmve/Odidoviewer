@@ -273,7 +273,7 @@
 <div class="toolbar">
   <div class="fg">
     <label>Search</label>
-    <input type="text" id="searchInput" placeholder="Name, city, postal code, ID, activity log..." oninput="schedFilter()">
+    <input type="text" id="searchInput" placeholder="Name, city, postal code, ID..." oninput="schedFilter()">
   </div>
   <div class="fg">
     <label>Status</label>
@@ -383,7 +383,6 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
             if (r.Id) known.add(r.Id);
             const lean = {};
             for (const k of LEAN_KEYS) lean[k] = r[k] || '';
-            if (r.SObjectLog__c) lean._log = r.SObjectLog__c.toLowerCase();
             lean._source     = sourceName;
             lean._byteOffset = lineBytePos;
             lean._byteLen    = lineBytes - 1;
@@ -414,7 +413,6 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
         if (r.Id) known.add(r.Id);
         const lean = {};
         for (const k of LEAN_KEYS) lean[k] = r[k] || '';
-        if (r.SObjectLog__c) lean._log = r.SObjectLog__c.toLowerCase();
         lean._source     = sourceName;
         lean._byteOffset = lineBytePos;
         lean._byteLen    = enc.encode(tail).length;
@@ -711,7 +709,7 @@ function applyFilters() {
     if (source  && r['_source']                !== source)  return false;
     if (year    && !r['CreatedDate'].startsWith(year))      return false;
     if (search) {
-      const h = r['Name'] + '\0' + r['BillingCity'] + '\0' + r['BillingPostalCode'] + '\0' + r['Id'] + '\0' + r['_source'] + '\0' + (r['_log'] || '');
+      const h = r['Name'] + '\0' + r['BillingCity'] + '\0' + r['BillingPostalCode'] + '\0' + r['Id'] + '\0' + r['_source'];
       if (h.toLowerCase().indexOf(search) === -1) return false;
     }
     return true;
