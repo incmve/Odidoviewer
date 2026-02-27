@@ -896,6 +896,149 @@
       border-radius: 3px;
     }
 
+    /* ---- Break-the-glass full log index ---- */
+    .btn-glass {
+      background: none;
+      border: 1px solid #dc2626;
+      color: #dc2626;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-glass:not(.active):hover {
+      border-color: #ef4444;
+      color: #ef4444;
+      background: rgba(220, 38, 38, 0.06);
+    }
+
+    .btn-glass.active {
+      border-color: #16a34a;
+      color: #16a34a;
+      background: rgba(22, 163, 74, 0.08);
+    }
+
+    .btn-glass.active:hover {
+      border-color: #22c55e;
+      color: #22c55e;
+      background: rgba(22, 163, 74, 0.14);
+    }
+
+    .btn-glass.active .glass-icon::before {
+      content: '🔓';
+    }
+
+    .btn-glass:not(.active) .glass-icon::before {
+      content: '🔒';
+    }
+
+    /* Modal */
+    .glass-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .glass-overlay.show {
+      display: flex;
+    }
+
+    .glass-modal {
+      background: #1a1a2e;
+      border: 1px solid #7f1d1d;
+      border-radius: 10px;
+      width: 480px;
+      max-width: calc(100vw - 32px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+    }
+
+    .glass-modal-head {
+      background: #7f1d1d;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #fecaca;
+    }
+
+    .glass-modal-body {
+      padding: 20px;
+    }
+
+    .glass-modal-body p {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .glass-modal-body p strong {
+      color: #f87171;
+    }
+
+    .glass-modal-warning {
+      background: #1f1010;
+      border: 1px solid #7f1d1d;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      color: #fca5a5;
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+
+    .glass-modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 0 20px 18px;
+    }
+
+    .btn-glass-confirm {
+      background: #7f1d1d;
+      color: #fecaca;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-glass-confirm:hover {
+      background: #991b1b;
+    }
+
+    .btn-glass-cancel {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-glass-cancel:hover {
+      background: #0f172a;
+    }
+
     /* ---- Update banner ---- */
     .update-banner {
       display: none;
@@ -1025,6 +1168,35 @@
     <div class="import-actions">
       <button class="btn" id="loadBtn" onclick="startLoad()" disabled>Load All Files</button>
       <button class="btn danger" onclick="clearAll()" id="clearBtn" style="display:none">Clear All Data</button>
+      <button class="btn-glass" id="glassBtn" onclick="openFullLogModal()"
+        title="Full activity log indexing — read warning before enabling">
+        <span class="glass-icon"></span>Full Log Search
+      </button>
+    </div>
+  </div>
+
+  <!-- Break-the-glass modal -->
+  <div class="glass-overlay" id="glassOverlay">
+    <div class="glass-modal">
+      <div class="glass-modal-head">⚠️ Full Activity Log Indexing</div>
+      <div class="glass-modal-body">
+        <p>By default, only the <strong>first 1,000 characters</strong> of each record's activity log are held in memory
+          — enough for most searches.</p>
+        <p>Enabling this mode stores the <strong>entire SObjectLog per record</strong> in RAM, making all log history
+          searchable. This is expensive:</p>
+        <div class="glass-modal-warning">
+          📋 &nbsp;A full dataset of ~50,000 records can easily consume <strong>2–4 GB of RAM</strong> for log data
+          alone.<br>
+          💥 &nbsp;On a low-memory machine your browser tab <strong>will likely crash</strong>.<br>
+          🔄 &nbsp;Files already loaded must be <strong>re-ingested</strong> after toggling this setting.
+        </div>
+        <p id="glassReloadNote" style="display:none; color:#fbbf24;">You have data loaded. <strong
+            style="color:#fbbf24;">Clear All Data first</strong>, then re-load your files with this mode active.</p>
+      </div>
+      <div class="glass-modal-footer">
+        <button class="btn-glass-cancel" onclick="closeFullLogModal()">Cancel</button>
+        <button class="btn-glass-confirm" id="glassConfirmBtn" onclick="confirmFullLogIndex()">Enable anyway</button>
+      </div>
     </div>
   </div>
 
@@ -1170,7 +1342,7 @@ const CHUNK = 4 * 1024 * 1024;
 const BATCH = 2000;
 const enc   = new TextEncoder();
 
-self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
+self.onmessage = async function({ data: { file, sourceName, knownIds, fullLogIndex } }) {
   const known = new Set(knownIds);
   const size  = file.size;
   let offset  = 0, tail = '', lineBytePos = 0;
@@ -1196,6 +1368,7 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
             const lean = {};
             for (const k of LEAN_KEYS) lean[k] = r[k] || '';
             lean._hasLog     = !!r.SObjectLog__c;
+            lean._logSearch  = r.SObjectLog__c ? (fullLogIndex ? r.SObjectLog__c.toLowerCase() : r.SObjectLog__c.slice(0, 1000).toLowerCase()) : '';
             lean._source     = sourceName;
             lean._byteOffset = lineBytePos;
             lean._byteLen    = lineBytes - 1;
@@ -1227,6 +1400,7 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
         const lean = {};
         for (const k of LEAN_KEYS) lean[k] = r[k] || '';
         lean._hasLog     = !!r.SObjectLog__c;
+        lean._logSearch  = r.SObjectLog__c ? r.SObjectLog__c.slice(0, 1000).toLowerCase() : '';
         lean._source     = sourceName;
         lean._byteOffset = lineBytePos;
         lean._byteLen    = enc.encode(tail).length;
@@ -1259,6 +1433,7 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
     let lastUIRefresh = 0;
     let activeWorker = null;
     let totalDups = 0;
+    let fullLogIndex = false;
 
     // Per-file queue state
     let qState = {};       // { filename: 'pending'|'loading'|'done'|'error' }
@@ -1410,7 +1585,7 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
 
         activeWorker = new Worker(WORKER_URL);
         const worker = activeWorker;
-        worker.postMessage({ file, sourceName: file.name, knownIds });
+        worker.postMessage({ file, sourceName: file.name, knownIds, fullLogIndex });
 
         worker.onmessage = function ({ data: msg }) {
           if (msg.type === 'progress' || msg.type === 'batch') {
@@ -1459,6 +1634,38 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
       if (s < 60) return s + 's';
       return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
     }
+
+    // ============================================================
+    //  Full log index (break-the-glass)
+    // ============================================================
+    function openFullLogModal() {
+      // If already active, toggle off immediately (no warning needed to disable)
+      if (fullLogIndex) {
+        fullLogIndex = false;
+        document.getElementById('glassBtn').classList.remove('active');
+        toast('Full log indexing disabled. Re-load files to apply.', 'ok');
+        return;
+      }
+      // Show reload note if data is already loaded
+      document.getElementById('glassReloadNote').style.display = DATA.length ? '' : 'none';
+      document.getElementById('glassOverlay').classList.add('show');
+    }
+
+    function closeFullLogModal() {
+      document.getElementById('glassOverlay').classList.remove('show');
+    }
+
+    function confirmFullLogIndex() {
+      fullLogIndex = true;
+      document.getElementById('glassBtn').classList.add('active');
+      closeFullLogModal();
+      toast('Full log indexing enabled. Re-load your files to apply.', 'ok');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('glassOverlay').addEventListener('click', function (e) {
+      if (e.target === this) closeFullLogModal();
+    });
 
     // ============================================================
     //  Clear all
@@ -1542,7 +1749,7 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
         if (modifiedFrom && (!r['LastModifiedDate'] || r['LastModifiedDate'].slice(0, 10) < modifiedFrom)) return false;
         if (modifiedTo && (!r['LastModifiedDate'] || r['LastModifiedDate'].slice(0, 10) > modifiedTo)) return false;
         if (search) {
-          const h = r['Name'] + '\0' + r['BillingCity'] + '\0' + r['BillingPostalCode'] + '\0' + r['Id'] + '\0' + r['_source'];
+          const h = r['Name'] + '\0' + r['BillingCity'] + '\0' + r['BillingPostalCode'] + '\0' + r['Id'] + '\0' + r['_source'] + '\0' + r._logSearch;
           if (h.toLowerCase().indexOf(search) === -1) return false;
         }
         return true;
@@ -1873,7 +2080,7 @@ self.onmessage = async function({ data: { file, sourceName, knownIds } }) {
     // ============================================================
     //  Version check
     // ============================================================
-    const APP_VERSION = '1.2.3';
+    const APP_VERSION = '1.3.0';
     const VERSION_URL = 'https://raw.githubusercontent.com/datasafari-org/Odidoviewer/main/version.json';
     const LS_DISMISSED = 'ov_dismissed_version';
     const LS_CHECKED = 'ov_last_checked';

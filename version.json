@@ -1,4 +1,4 @@
 {
-  "version": "1.2.3",
-  "notes": "Better file handeling, and some Bug fixes as mentioned by licon @Tweakers.net in post https://tweakers.net/nieuws/245128/hackers-zetten-eerste-batch-met-gestolen-odido-data-online.html Thanks!"
+  "version": "1.3.0",
+  "notes": "Full log search off by default — indexes first 1,000 chars of SObjectLog per record. Enable via button. Read the memory warning."
 }
